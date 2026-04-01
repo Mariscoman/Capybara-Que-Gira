@@ -14,8 +14,6 @@ struct Vertex {
 	}
 };
 
-std::vector<std::string> splitLine(const std::string &line);
-std::array<int, 2> splitFace(const std::string &face);
 void readVertex(const std::string &objFile, std::vector<Vertex> &outVertices, std::vector<std::array<int, 3>> &outFaces);
 
 #endif
