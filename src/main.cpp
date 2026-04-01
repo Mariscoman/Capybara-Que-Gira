@@ -2,6 +2,7 @@
 #include <math.h>
 #include <vector>
 #include <array>
+#include <random>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -25,19 +26,21 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+	/* Creating the window */
 	GLFWwindow *window = glfwCreateWindow(800, 600, "Capybara Que Gira", NULL, NULL);
 	if(window == NULL) {
-		std::cout << "Fallo al crear la ventana" << std::endl;
+		std::cout << "Error creating the window" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);
 
+	/* Initializing glad */
 	if(!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-		std::cout << "Fallo al iniciar GLAD" << std::endl;
+		std::cout << "Error initializing GLAD" << std::endl;
 		return -1;
 	}
-
 	glEnable(GL_DEPTH_TEST);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CW);
@@ -45,17 +48,21 @@ int main() {
 
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
+	/* Creating and compiling shaders */
 	Shader shader("shaders/vertexShader.glsl", "shaders/fragmentShader.glsl");
 
+	/* Reading obj file */
 	std::vector<Vertex> vertices;
 	std::vector<std::array<int, 3>> faces;
 	readVertex("resources/models/CapybaraLowerPoly.obj", vertices, faces);
 
+	/* Creating vertex and element buffers */
 	unsigned int VBO, VAO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
 	
+	/* Setting vertex and face data */
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
@@ -68,21 +75,44 @@ int main() {
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void *)(3*sizeof(float)));
 	glEnableVertexAttribArray(1);
 
+	/* Creating texture */
 	unsigned int texture = readTexture("resources/textures/capybara.jpeg", GL_RGB);
 
 	shader.use();
 	shader.setInt("texture", 0);
 
+	/* RNG */
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<> distr(0.0, 1.0);
+
+	/* First color and color switch time */
+	float r = distr(gen),
+		  g = distr(gen),
+		  b = distr(gen);
+	float lastColorChange = 0.0f,
+		  colorInterval = 0.5f;
+
 	while(!glfwWindowShouldClose(window)) {
-		glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+		/* Change backgorund color */
+		float currTime = glfwGetTime();
+		if(currTime - lastColorChange >= colorInterval) {
+			r = distr(gen);
+			g = distr(gen);
+			b = distr(gen);
+			lastColorChange = currTime;
+		}
+		glClearColor(r, g, b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
 
+		/* Rotate object */
 		glm::mat4 trans = glm::mat4(1.0f);
-		trans = glm::rotate(trans, (float) glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+		trans = glm::rotate(trans, currTime, glm::vec3(0.0f, 1.0f, 0.0f));
 		
+		/* Render object */
 		shader.use();
 		unsigned int transformLoc = glGetUniformLocation(shader.ID, "transform");
 		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
