@@ -54,7 +54,7 @@ int main() {
 	/* Reading obj file */
 	std::vector<Vertex> vertices;
 	std::vector<std::array<int, 3>> faces;
-	readVertex("resources/models/CapybaraLowerPoly.obj", vertices, faces);
+	readObj("resources/models/CapybaraLowerPoly.obj", vertices, faces);
 
 	/* Creating vertex and element buffers */
 	unsigned int VBO, VAO, EBO;

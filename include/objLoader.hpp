@@ -14,6 +14,6 @@ struct Vertex {
 	}
 };
 
-void readVertex(const std::string &objFile, std::vector<Vertex> &outVertices, std::vector<std::array<int, 3>> &outFaces);
+void readObj(const std::string &objFile, std::vector<Vertex> &outVertices, std::vector<std::array<int, 3>> &outFaces);
 
 #endif
