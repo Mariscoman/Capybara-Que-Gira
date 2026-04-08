@@ -4,12 +4,15 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
+#include <charconv>
+#include <string_view>
 
 using namespace std;
 
-void readObj(const string &objFile, vector<Vertex> &outVertices, vector<array<int, 3>> &outFaces);
-vector<string> splitLine(const string &line);
-array<int, 2> splitFace(const string &face);
+static inline int strvToI(string_view sv);
+static inline float strvToF(string_view sv);
+vector<string_view> splitLine(string_view line);
+array<int, 2> splitVertexPair(string_view face);
 
 struct PairHash { /* Custom hash for the map used in readObj */
 	size_t operator()(const array<int, 2> &p) const {
@@ -31,25 +34,25 @@ void readObj(const string &objFile, vector<Vertex> &outVertices, vector<array<in
 	unordered_map<array<int, 2>, int, PairHash> vertexIndexPairs;
 
 	while(getline(file, s)) {
-		vector<string> splitted = splitLine(s);
+		vector<string_view> splitted = splitLine(s);
 
 		if(splitted.empty()) continue;
 
-		string id = splitted[0];	/* v,vt,f... */
+		string_view id = splitted[0];	/* v,vt,f... */
 
 		if(id == "v") {	/* v x y z */
-			vertices.push_back({ stof(splitted[1]),
-								stof(splitted[2]),
-								stof(splitted[3]) });
+			vertices.push_back({ strvToF(splitted[1]),
+								 strvToF(splitted[2]),
+								 strvToF(splitted[3]) });
 		}
 		else if(id == "vt") { /* v x y */
-			texVertices.push_back({ stof(splitted[1]),
-									stof(splitted[2]) });
+			texVertices.push_back({ strvToF(splitted[1]),
+									strvToF(splitted[2]) });
 		}
 		else if(id == "f") { /* f v/vt/vn v/vt/vn v/vt/vn */
 			array<int, 3> face;
 			for(unsigned int i = 0; i < 3; i++) {
-				array<int, 2> pair = splitFace(splitted[i + 1]);
+				array<int, 2> pair = splitVertexPair(splitted[i + 1]);
 				/* Read the vertex index if is already saved */
 				auto [it, hadToInsert] = vertexIndexPairs.try_emplace(pair, (int) outVertices.size());
 				if(hadToInsert) {
@@ -67,33 +70,46 @@ void readObj(const string &objFile, vector<Vertex> &outVertices, vector<array<in
 	}
 }
 
-vector<string> splitLine(const string &line) {
-	vector<string> tokens;
-	const char *p = line.c_str();
-	while(*p) {
-		/* Skip whitespace */
-		while(*p == ' ' || *p == '\t') p++;
-		if(!*p) break;
-		/* Get first token */
-		const char *start = p;
-		/* Skip more whitespace */
-		while(*p && *p != ' ' && *p != '\t') p++;
+static inline int strvToI(string_view sv) {
+	int v = 0;
+	from_chars(sv.data(), sv.data() + sv.size(), v);
+	return v;
+}
 
-		tokens.emplace_back(start, p);
+static inline float strvToF(string_view sv) {
+	float v = 0.0f;
+	from_chars(sv.data(), sv.data() + sv.size(), v);
+	return v;
+}
+
+vector<string_view> splitLine(string_view line) {
+	vector<string_view> tokens;
+	int i = 0, n = line.size();
+	while(i < n) {
+		/* Skip whitespace */
+		while(i < n && (line[i] == ' ' || line[i] == '\t')) i++;
+		if(i == n) break;
+
+		/* Get start of token and add it to the list */
+		int tok = i;
+		while(i < n && line[i] != ' ' && line[i] != '\t') i++;
+		tokens.emplace_back(line.data() + tok, i - tok);
 	}
 	return tokens;
 }
 
-array<int, 2> splitFace(const string &face) {
-	size_t vDiv = face.find('/');
+array<int, 2> splitVertexPair(string_view face) {
 	int vIdx = 0, vtIdx = 0;
-	vIdx = stoi(face.substr(0, vDiv));
+	size_t vDiv = face.find('/');
+	/* Read until the next / or until the end of the string */
+	from_chars(face.data(), face.data() + (vDiv == string_view::npos ? face.size() : vDiv), vIdx);
 
-	if(vDiv != string::npos) {
-		size_t vtDiv = face.find('/', vDiv + 1);
-		string vtStr = face.substr(vDiv + 1, vtDiv - vDiv - 1); /* Ignore the normal vector */
-		if(!vtStr.empty()) vtIdx = stoi(vtStr);
+	if(vDiv != string_view::npos) {
+		string_view vt = face.substr(vDiv + 1);
+		int vtDiv = vt.find('/');
+		string_view vtStr = vt.substr(0, vtDiv);
+		if(!vtStr.empty()) from_chars(vtStr.data(), vtStr.data() + vtStr.size(), vtIdx);
 	}
-	
+
 	return { vIdx, vtIdx };
 }
