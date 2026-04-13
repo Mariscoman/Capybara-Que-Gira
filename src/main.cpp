@@ -110,7 +110,7 @@ int main() {
 
 		/* Rotate object */
 		glm::mat4 trans = glm::mat4(1.0f);
-		trans = glm::rotate(trans, currTime, glm::vec3(0.0f, 1.0f, 0.0f));
+		trans = glm::rotate(trans, currTime + 180.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 		
 		/* Render object */
 		shader.use();

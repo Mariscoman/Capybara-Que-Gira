@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <charconv>
 #include <string_view>
+#include <cstring>
 
 using namespace std;
 
@@ -100,13 +101,14 @@ vector<string_view> splitLine(string_view line) {
 
 array<int, 2> splitVertexPair(string_view face) {
 	int vIdx = 0, vtIdx = 0;
-	size_t vDiv = face.find('/');
-	/* Read until the next / or until the end of the string */
+	size_t vDiv = face.find_first_of('/');
+
 	from_chars(face.data(), face.data() + (vDiv == string_view::npos ? face.size() : vDiv), vIdx);
 
+	/* Read until the next / or until the end of the string */
 	if(vDiv != string_view::npos) {
 		string_view vt = face.substr(vDiv + 1);
-		int vtDiv = vt.find('/');
+		int vtDiv = vt.find_first_of('/');
 		string_view vtStr = vt.substr(0, vtDiv);
 		if(!vtStr.empty()) from_chars(vtStr.data(), vtStr.data() + vtStr.size(), vtIdx);
 	}
