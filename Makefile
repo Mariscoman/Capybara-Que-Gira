@@ -3,7 +3,9 @@ SHELL := cmd.exe
 # Compile
 CXX      := g++
 CC       := gcc
-CXXFLAGS := -std=c++17 -Wall -Wextra -g -Iinclude
+INCLUDES := -Iinclude -Iexternal
+CXXFLAGS := -std=c++17 -Wall -Wextra -g $(INCLUDES)
+CCFLAGS  := -std=c17 -Wall -Wextra -g $(INCLUDES)
 LDFLAGS  := -Llib
 LDLIBS   := -lglfw3 -lopengl32 -lgdi32
 
@@ -33,7 +35,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@if not exist "$(subst /,\,$(dir $@))" mkdir "$(subst /,\,$(dir $@))"
-	$(CC) $(CXXFLAGS) -c $< -o $@
+	$(CC) $(CCFLAGS) -c $< -o $@
 
 clean:
 	@if exist $(OBJ_DIR) rmdir /s /q $(OBJ_DIR)
