@@ -21,10 +21,14 @@ unsigned int readTexture(const char *textureRoute, unsigned int format = GL_RGB)
 void readCapybara(std::string file, float *vertices, float *indices);
 
 int main() {
+
+	std::cout << "Capybara: Initializing environment" << std::endl;
+
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
 	/* Creating the window */
 	GLFWwindow *window = glfwCreateWindow(800, 600, "Capybara Que Gira", NULL, NULL);
@@ -48,9 +52,11 @@ int main() {
 
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
+	std::cout << "Capybara: Compiling shaders" << std::endl;
 	/* Creating and compiling shaders */
 	Shader shader("shaders/vertexShader.glsl", "shaders/fragmentShader.glsl");
 
+	std::cout << "Capybara: Loading model" << std::endl;
 	/* Reading obj file */
 	std::vector<Vertex> vertices;
 	std::vector<std::array<int, 3>> faces;
@@ -75,6 +81,7 @@ int main() {
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void *)(3*sizeof(float)));
 	glEnableVertexAttribArray(1);
 
+	std::cout << "Capybara: Loading texture" << std::endl;
 	/* Creating texture */
 	unsigned int texture = readTexture("resources/textures/capybara.jpeg", GL_RGB);
 
@@ -92,6 +99,9 @@ int main() {
 		  b = distr(gen);
 	float lastColorChange = 0.0f,
 		  colorInterval = 0.5f;
+
+	std::cout << "Capybara: Capybara" << std::endl;
+	glfwShowWindow(window);
 
 	while(!glfwWindowShouldClose(window)) {
 		/* Change backgorund color */
