@@ -12,8 +12,8 @@ using namespace std;
 
 static inline int strvToI(string_view sv);
 static inline float strvToF(string_view sv);
-vector<string_view> splitLine(string_view line);
-array<int, 2> splitVertexPair(string_view face);
+static void splitLine(string_view line, vector<string_view> &outTokens);
+static array<int, 2> splitVertexPair(string_view face);
 
 struct PairHash { /* Custom hash for the map used in readObj */
 	size_t operator()(const array<int, 2> &p) const {
@@ -34,8 +34,10 @@ void readObj(const string &objFile, vector<Vertex> &outVertices, vector<array<in
 	vector<array<float, 2>> texVertices;
 	unordered_map<array<int, 2>, int, PairHash> vertexIndexPairs;
 
+	vector<string_view> splitted;
+
 	while(getline(file, s)) {
-		vector<string_view> splitted = splitLine(s);
+		splitLine(s, splitted);
 
 		if(splitted.empty()) continue;
 
@@ -83,8 +85,8 @@ static inline float strvToF(string_view sv) {
 	return v;
 }
 
-vector<string_view> splitLine(string_view line) {
-	vector<string_view> tokens;
+static void splitLine(string_view line, vector<string_view> &outTokens) {
+	outTokens.clear();
 	int i = 0, n = line.size();
 	while(i < n) {
 		/* Skip whitespace */
@@ -94,12 +96,11 @@ vector<string_view> splitLine(string_view line) {
 		/* Get start of token and add it to the list */
 		int tok = i;
 		while(i < n && line[i] != ' ' && line[i] != '\t') i++;
-		tokens.emplace_back(line.data() + tok, i - tok);
+		outTokens.emplace_back(line.data() + tok, i - tok);
 	}
-	return tokens;
 }
 
-array<int, 2> splitVertexPair(string_view face) {
+static array<int, 2> splitVertexPair(string_view face) {
 	int vIdx = 0, vtIdx = 0;
 	size_t vDiv = face.find_first_of('/');
 
