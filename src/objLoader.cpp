@@ -25,7 +25,7 @@ void readObj(const string &objFile, vector<Vertex> &outVertices, vector<array<in
 	/* Open file */
 	ifstream file(objFile);
 	if(!file.is_open()) {
-		cerr << "Failed to read obj file" << endl;
+		cerr << "Capybara: Failed to read obj file" << endl;
 		return;
 	}
 

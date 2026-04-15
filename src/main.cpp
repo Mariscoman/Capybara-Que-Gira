@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 
 #include <stb_image/stb_image.h>
+#include <miniaudio/miniaudio.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -18,7 +19,7 @@
 #include <objLoader.hpp>
 
 unsigned int readTexture(const char *textureRoute, unsigned int format = GL_RGB);
-void readCapybara(std::string file, float *vertices, float *indices);
+ma_result playMusic(ma_engine *engine, ma_sound *sound, const char *file);
 
 int main() {
 
@@ -33,7 +34,7 @@ int main() {
 	/* Creating the window */
 	GLFWwindow *window = glfwCreateWindow(800, 600, "Capybara Que Gira", NULL, NULL);
 	if(window == NULL) {
-		std::cout << "Error creating the window" << std::endl;
+		std::cout << "Capybara: Failed window creation" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
@@ -42,7 +43,7 @@ int main() {
 
 	/* Initializing glad */
 	if(!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-		std::cout << "Error initializing GLAD" << std::endl;
+		std::cout << "Capybara: Failed GLAD initialization" << std::endl;
 		return -1;
 	}
 	glEnable(GL_DEPTH_TEST);
@@ -52,12 +53,12 @@ int main() {
 
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
-	std::cout << "Capybara: Compiling shaders" << std::endl;
 	/* Creating and compiling shaders */
+	std::cout << "Capybara: Compiling shaders" << std::endl;
 	Shader shader("shaders/vertexShader.glsl", "shaders/fragmentShader.glsl");
 
-	std::cout << "Capybara: Loading model" << std::endl;
 	/* Reading obj file */
+	std::cout << "Capybara: Loading model" << std::endl;
 	std::vector<Vertex> vertices;
 	std::vector<std::array<int, 3>> faces;
 	readObj("resources/models/capybaraLowerPoly.obj", vertices, faces);
@@ -81,12 +82,20 @@ int main() {
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void *)(3*sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	std::cout << "Capybara: Loading texture" << std::endl;
 	/* Creating texture */
+	std::cout << "Capybara: Loading texture" << std::endl;
 	unsigned int texture = readTexture("resources/textures/capybara.jpeg", GL_RGB);
 
 	shader.use();
 	shader.setInt("texture", 0);
+
+	/* Loading music */
+	std::cout << "Capybara: Loading music" << std::endl;
+	ma_engine engine;
+	ma_sound sound;
+	if(playMusic(&engine, &sound, "resources/music/StayInsideMe.mp3") != MA_SUCCESS) {
+		std::cout << "Capybara: Failed loading music" << std::endl;
+	}
 
 	/* RNG */
 	std::random_device rd;
@@ -101,6 +110,7 @@ int main() {
 		  colorInterval = 0.5f;
 
 	std::cout << "Capybara: Capybara" << std::endl;
+	ma_sound_start(&sound);
 	glfwShowWindow(window);
 
 	while(!glfwWindowShouldClose(window)) {
@@ -138,10 +148,12 @@ int main() {
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
 
+	ma_sound_uninit(&sound);
+    ma_engine_uninit(&engine);
+
 	glfwTerminate();
 	return 0;
 }
-
 
 unsigned int readTexture(const char *textureRoute, unsigned int format) {
 	unsigned int ID;
@@ -160,9 +172,27 @@ unsigned int readTexture(const char *textureRoute, unsigned int format) {
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	} else {
-		std::printf("Failed to load texture");
+		std::cout << "Capybara: Failed to load texture" << std::endl;
 	}
 	stbi_image_free(data);
 
 	return ID;
+}
+
+ma_result playMusic(ma_engine *engine, ma_sound *sound, const char *file) {
+	ma_result result;
+
+	result = ma_engine_init(NULL, engine);
+	if(result != MA_SUCCESS) return result;
+
+	/* Initialize sound from file */
+	result = ma_sound_init_from_file(engine, file, MA_SOUND_FLAG_DECODE, NULL, NULL, sound);
+	if(result != MA_SUCCESS) {
+		ma_engine_uninit(engine);
+		return result;
+	}
+
+	ma_sound_set_looping(sound, MA_TRUE);
+
+	return MA_SUCCESS;
 }
